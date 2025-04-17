@@ -245,6 +245,7 @@ class GooglePatentsServer {
         capabilities: {
           resources: {},
           tools: {},
+          prompts: {}, // Declare prompts capability
         },
       }
     );
