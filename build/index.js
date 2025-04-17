@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { CallToolRequestSchema, ListToolsRequestSchema, McpError } from '@modelcontextprotocol/sdk/types.js';
+import { CallToolRequestSchema, ListToolsRequestSchema, ListResourcesRequestSchema, ListPromptsRequestSchema, McpError } from '@modelcontextprotocol/sdk/types.js';
 import winston from 'winston';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -207,6 +207,9 @@ class GooglePatentsServer {
         });
         logger.debug('Setting up tool handlers');
         this.setupToolHandlers();
+        // Register handlers for standard MCP list methods required by some clients
+        this.server.setRequestHandler(ListResourcesRequestSchema, async () => ({ resources: [] }));
+        this.server.setRequestHandler(ListPromptsRequestSchema, async () => ({ prompts: [] }));
         this.server.onerror = (error) => {
             logger.error('[MCP Error]', error);
             logger.debug(`MCP server error details: ${error instanceof Error ? error.stack : JSON.stringify(error)}`);
