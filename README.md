@@ -4,6 +4,16 @@
 
 This project provides a Model Context Protocol (MCP) server that allows searching Google Patents information via the [SerpApi Google Patents API](https://serpapi.com/google-patents-api).
 
+## Changelog
+
+### v0.2.0 (2025-04-17)
+
+*   **Fix:** Implemented empty handlers for `resources/list` and `prompts/list` MCP methods.
+*   **Fix:** Declared `prompts` capability in server initialization.
+*   **Chore:** Updated dependencies.
+
+These changes aim to improve compatibility with MCP clients like Claude Desktop which may require these standard endpoints, though direct testing with Claude Desktop has not yet been performed.
+
 ## Features
 
 *   Provides an MCP tool `search_patents` to search Google Patents.
@@ -197,16 +207,6 @@ Returns a JSON object containing the search results from SerpApi. The structure 
     ```bash
     npm run dev
     ```
-
-## Changelog
-
-### v0.3.0 (2025-04-17)
-
-*   **Fix:** Implemented empty handlers for `resources/list` and `prompts/list` MCP methods.
-*   **Fix:** Declared `prompts` capability in server initialization.
-*   **Chore:** Updated dependencies.
-
-These changes aim to improve compatibility with MCP clients like Claude Desktop which may require these standard endpoints, though direct testing with Claude Desktop has not yet been performed.
 
 ## Logging
 

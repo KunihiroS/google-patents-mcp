@@ -207,7 +207,7 @@ class GooglePatentsServer {
         logger.debug('Initializing Google Patents Server');
         this.server = new Server({
             name: 'google-patents-server',
-            version: '0.1.0',
+            version: '0.2.0',
         }, {
             capabilities: {
                 resources: {},
