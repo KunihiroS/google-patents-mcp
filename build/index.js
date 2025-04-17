@@ -11,6 +11,15 @@ import * as fs from 'fs';
 import fetch from 'node-fetch'; // Import node-fetch
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+// ★★★★★★★★★★★★★★★★★★★★★★★★★★
+// ★ デバッグ用ログを追加 ★
+// ★★★★★★★★★★★★★★★★★★★★★★★★★★
+console.log(`--- MCP Server Startup ---`);
+console.log(`[DEBUG] Node version: ${process.version}`);
+console.log(`[DEBUG] Script path: ${__filename}`);
+console.log(`[DEBUG] SERPAPI_API_KEY check: ${process.env.SERPAPI_API_KEY ? 'Exists (set)' : 'MISSING!'}`);
+console.log(`-------------------------`);
+// ★★★★★★★★★★★★★★★★★★★★★★★★★★
 // ロガーのフォーマット設定を共通化
 const createLoggerFormat = () => {
     return winston.format.combine(winston.format.timestamp(), winston.format.printf(({ timestamp, level, message }) => {
