@@ -212,6 +212,7 @@ class GooglePatentsServer {
             capabilities: {
                 resources: {},
                 tools: {},
+                prompts: {}, // Declare prompts capability
             },
         });
         logger.debug('Setting up tool handlers');
