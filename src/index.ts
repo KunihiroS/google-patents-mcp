@@ -239,7 +239,7 @@ class GooglePatentsServer {
     this.server = new Server(
       {
         name: 'google-patents-server',
-        version: '0.1.0',
+        version: '0.3.0',
       },
       {
         capabilities: {

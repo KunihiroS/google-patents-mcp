@@ -1,6 +1,6 @@
 {
   "name": "@kunihiros/google-patents-mcp",
-  "version": "0.1.1",
+  "version": "0.3.0",
   "description": "MCP server for searching Google Patents via SerpApi",
   "main": "build/index.js",
   "type": "module",

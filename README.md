@@ -198,6 +198,16 @@ Returns a JSON object containing the search results from SerpApi. The structure 
     npm run dev
     ```
 
+## Changelog
+
+### v0.3.0 (2025-04-17)
+
+*   **Fix:** Implemented empty handlers for `resources/list` and `prompts/list` MCP methods.
+*   **Fix:** Declared `prompts` capability in server initialization.
+*   **Chore:** Updated dependencies.
+
+These changes aim to improve compatibility with MCP clients like Claude Desktop which may require these standard endpoints, though direct testing with Claude Desktop has not yet been performed.
+
 ## Logging
 
 *   Logs are output to standard error.
