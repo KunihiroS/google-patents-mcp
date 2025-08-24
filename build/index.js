@@ -7,19 +7,13 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import * as fs from 'fs';
-// import axios from 'axios'; // Remove axios
-import fetch from 'node-fetch'; // Import node-fetch
+import fetch from 'node-fetch';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-// ★★★★★★★★★★★★★★★★★★★★★★★★★★
-// ★ デバッグ用ログを追加 ★
-// ★★★★★★★★★★★★★★★★★★★★★★★★★★
 console.log(`--- MCP Server Startup ---`);
 console.log(`[DEBUG] Node version: ${process.version}`);
-console.log(`[DEBUG] Script path: ${__filename}`);
 console.log(`[DEBUG] SERPAPI_API_KEY check: ${process.env.SERPAPI_API_KEY ? 'Exists (set)' : 'MISSING!'}`);
 console.log(`-------------------------`);
-// ★★★★★★★★★★★★★★★★★★★★★★★★★★
 // ロガーのフォーマット設定を共通化
 const createLoggerFormat = () => {
     return winston.format.combine(winston.format.timestamp(), winston.format.printf(({ timestamp, level, message }) => {
@@ -34,13 +28,6 @@ const initialLogger = winston.createLogger({
         new winston.transports.Console()
     ]
 });
-// MCP Hostからの環境変数を優先し、.envファイルはフォールバックとして扱う
-// MCP Hostからの環境変数を優先し、.envファイルはフォールバックとして扱う
-// .env ファイルの読み込みロジックは削除済み
-// SERPAPI_API_KEY は環境変数からのみ取得する
-// ログレベルの明示的な確認（デバッグ用）
-// console.log(`Environment variable LOG_LEVEL: ${process.env.LOG_LEVEL}`); // Temporarily commented out
-initialLogger.debug(`Current initial logger level: ${initialLogger.level}`);
 // ログファイルパスを決定するシンプルな方法
 let logFilePath = null;
 // 1. まずプロジェクトルートに書き込みを試みる
@@ -168,13 +155,7 @@ process.on('exit', () => {
     logger.debug('Process exit event detected');
     flushLog();
 });
-// SIGINT (Ctrl+C) 処理
-process.on('SIGINT', () => {
-    logger.info('Received SIGINT. Shutting down.');
-    logger.debug('SIGINT handler triggered');
-    flushLog();
-    process.exit(0);
-});
+// SIGINT (Ctrl+C) handling will be done in the server constructor
 // 未処理の例外をキャッチ
 process.on('uncaughtException', (err) => {
     logger.error(`Uncaught exception: ${err.message}`);
@@ -193,13 +174,6 @@ if (!SERPAPI_API_KEY) {
 else {
     logger.info('SERPAPI_API_KEY found.');
     logger.debug('SERPAPI_API_KEY is set (value hidden for security).');
-}
-// Base64 エンコード／デコード ヘルパー関数
-function encodeText(text) {
-    return Buffer.from(text, 'utf8').toString('base64');
-}
-function decodeText(encoded) {
-    return Buffer.from(encoded, 'base64').toString('utf8');
 }
 class GooglePatentsServer {
     server;
@@ -267,14 +241,12 @@ class GooglePatentsServer {
         // ツール実行リクエスト処理 - ここで search_patents を実装する
         logger.debug('Registering CallTool request handler');
         this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-            // ハンドラが呼び出されたことをログ出力 (winston)
-            logger.debug('<<<< CallToolRequestSchema handler invoked (winston) >>>>');
-            logger.debug(`Received request object: ${JSON.stringify(request, null, 2)}`); // リクエスト全体もログ出力
+            logger.debug('CallTool request handler invoked');
+            logger.debug(`Received request object: ${JSON.stringify(request, null, 2)}`);
             const { name, arguments: args } = request.params;
             logger.debug(`CallTool handler called for tool: ${name} with args: ${JSON.stringify(args, null, 2)}`);
             if (name === 'search_patents') {
-                // --- 元のコードに戻す ---
-                const { q, ...otherParams } = args; // q は必須、その他はオプション
+                const { q, ...otherParams } = args;
                 if (!q) {
                     logger.error('Missing required argument "q" for search_patents');
                     throw new McpError(400, 'Missing required argument: q');
@@ -283,80 +255,62 @@ class GooglePatentsServer {
                     logger.error('SERPAPI_API_KEY is not configured.');
                     throw new McpError(500, 'Server configuration error: SERPAPI_API_KEY is missing.');
                 }
-                const controller = new AbortController(); // AbortController を try の前に移動
-                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000);
                 try {
-                    console.log('[DEBUG] Entered API call try block'); // tryブロック開始
-                    // パラメータを構築 (必須パラメータ)
                     const searchParams = new URLSearchParams({
                         engine: 'google_patents',
                         q: q,
                         api_key: SERPAPI_API_KEY
                     });
-                    // オプションパラメータを安全に追加
                     for (const [key, value] of Object.entries(otherParams)) {
                         if (value !== undefined) {
-                            searchParams.append(key, String(value)); // 値を文字列に変換
+                            searchParams.append(key, String(value));
                         }
                     }
                     const apiUrl = `https://serpapi.com/search.json?${searchParams.toString()}`;
-                    // console.log(`[DEBUG] Calling SerpApi URL: ${apiUrl}`); // デバッグ用console.log削除
-                    logger.info(`Calling SerpApi: ${apiUrl.replace(SERPAPI_API_KEY, '****')}`); // ログにはAPIキーを隠す
-                    // Use node-fetch with AbortController for timeout (controller と timeoutId は上で定義済み)
+                    logger.info(`Calling SerpApi: ${apiUrl.replace(SERPAPI_API_KEY, '****')}`);
                     const response = await fetch(apiUrl, { signal: controller.signal });
                     if (!response.ok) {
-                        // Handle HTTP errors (like 4xx, 5xx)
-                        let errorBody = 'Could not retrieve error body.'; // Default error message
+                        let errorBody = 'Could not retrieve error body.';
                         try {
-                            errorBody = await response.text(); // Try to get error body
+                            errorBody = await response.text();
                         }
                         catch (bodyError) {
                             logger.warn(`Failed to read error response body: ${bodyError instanceof Error ? bodyError.message : String(bodyError)}`);
                         }
-                        logger.error(`SerpApi request failed with status ${response.status} ${response.statusText}. Response body: ${errorBody}`); // Log the actual error body
-                        throw new McpError(response.status, `SerpApi request failed: ${response.statusText}. Body: ${errorBody}`); // Include body in error
+                        logger.error(`SerpApi request failed with status ${response.status} ${response.statusText}. Response body: ${errorBody}`);
+                        throw new McpError(response.status, `SerpApi request failed: ${response.statusText}. Body: ${errorBody}`);
                     }
-                    const data = await response.json(); // Parse JSON response
+                    const data = await response.json();
                     logger.info(`SerpApi request successful for query: "${q}"`);
                     logger.debug(`SerpApi response status: ${response.status}`);
-                    // レスポンスを type: 'text' の JSON 文字列として返す
-                    clearTimeout(timeoutId); // 成功時もタイマーをクリア
                     return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
                 }
                 catch (error) {
-                    clearTimeout(timeoutId); // エラー発生時もタイマーをクリア
                     if (error.name === 'AbortError') {
                         logger.error(`SerpApi request timed out after 30 seconds for query "${q}"`);
                         throw new McpError(408, 'SerpApi request timed out');
                     }
-                    // Handle other network errors or JSON parsing errors
                     logger.error(`Error during fetch or JSON parsing for query "${q}": ${error.message}`);
                     logger.error(`Unexpected error: ${error.stack}`);
                     throw new McpError(500, `An unexpected error occurred: ${error.message}`);
                 }
                 finally {
-                    // finally は不要になったので削除 (clearTimeout は try の最後と catch の最初で行う)
-                    // clearTimeout(timeoutId); // try の最後でクリアするか、catch の最初でクリアする
+                    clearTimeout(timeoutId);
                 }
-                // --- 元のコードここまで ---
             }
-            else { // This else corresponds to 'if (name === 'search_patents')'
+            else {
                 logger.warn(`Received request for unknown tool: ${name}`);
                 throw new McpError(404, `Unknown tool: ${name}`);
             }
         });
     }
     async run() {
-        // ★★★ run() メソッド開始直後 ★★★
-        console.log('[DEBUG] Server run() method started');
         logger.debug('Starting Google Patents MCP server');
         const transport = new StdioServerTransport();
         logger.debug('Created StdioServerTransport');
-        // ★★★ connect() 呼び出し直前 ★★★
-        console.log('[DEBUG] Calling server.connect(transport)');
         await this.server.connect(transport);
-        // ★★★ connect() 呼び出し直後 ★★★
-        console.log('[DEBUG] server.connect(transport) completed');
         logger.info("Google Patents MCP server running on stdio");
         logger.debug('Server connected to transport and ready to process requests');
     }
